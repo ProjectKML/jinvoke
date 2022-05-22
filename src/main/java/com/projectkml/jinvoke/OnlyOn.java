@@ -1,5 +1,6 @@
 package com.projectkml.jinvoke;
 
+import com.projectkml.jinvoke.util.Platform;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.annotation.ElementType;

@@ -5,6 +5,12 @@ plugins {
 group 'org.example'
 version '1.0-SNAPSHOT'
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
 repositories {
     mavenCentral()
 }
@@ -16,6 +22,19 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
 }
 
+task compileNatives {
+    doFirst {
+        exec {
+            workingDir "$projectDir/jinvoke_native"
+            executable 'cargo'
+            args 'build', '--release'
+        }
+    }
+}
+
 test {
     useJUnitPlatform()
 }
+
+tasks.build.dependsOn compileNatives
+tasks.build.mustRunAfter compileNatives

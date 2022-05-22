@@ -1,5 +1,6 @@
-package com.projectkml.jinvoke;
+package com.projectkml.jinvoke.util;
 
+import com.projectkml.jinvoke.InvalidTypeException;
 import org.jetbrains.annotations.NotNull;
 
 public enum PrimitiveType {

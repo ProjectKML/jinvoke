@@ -1,9 +1,10 @@
 package com.projectkml.jinvoke;
 
+import com.projectkml.jinvoke.util.*;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
@@ -11,8 +12,7 @@ public class JInvoke {
     private static native void generateModule(ByteBuffer buffer);
 
     static {
-        System.out.println(Paths.get(".").toAbsolutePath());
-        System.load("/Users/marlonklaus/Documents/Projekte/JInvoke/jinvoke_native/cmake-build-debug/libjinvoke_native.dylib");
+        System.load(Paths.get(".", "jinvoke_native/target/release/libjinvoke_native.so").toAbsolutePath().toString());
     }
 
     public static void load() throws InvalidTypeException {
@@ -25,14 +25,19 @@ public class JInvoke {
             return;
         }
 
-        final ByteBuffer buffer = ByteBuffer.allocateDirect(1024).order(ByteOrder.nativeOrder());
+        final Platform currentPlatform = Platform.getCurrent();
+        final DynamicByteBuffer buffer = new DynamicByteBuffer(512);
 
         for(final Method method: clazz.getDeclaredMethods()) {
             final Import annotation = method.getAnnotation(Import.class);
-            if(annotation == null) continue;
+            if(annotation == null) {
+                continue;
+            }
 
             final OnlyOn onlyOnAnnotation = method.getAnnotation(OnlyOn.class);
-            if(onlyOnAnnotation != null && !Arrays.asList(onlyOnAnnotation.value()).contains(Platform.getCurrent())) continue;
+            if(onlyOnAnnotation != null && !ArrayUtils.contains(onlyOnAnnotation.value(), currentPlatform)) {
+                continue;
+            }
 
             final String javaName = String.format("Java_%s_%s", clazz.getName().replace("_", "1_").replace('.', '_'),
                     method.getName().replace("_", "1_"));
@@ -53,17 +58,17 @@ public class JInvoke {
                 parameterTypes[i] = PrimitiveType.fromClass(method.getParameterTypes()[i], isPointer);
             }
 
-            BufferUtils.putUtf8String(buffer, javaName);
-            BufferUtils.putUtf8String(buffer, name);
+            buffer.write(javaName);
+            buffer.write(name);
 
-            buffer.put((byte)returnType.ordinal());
+            buffer.write((byte)returnType.ordinal());
 
-            buffer.putInt(parameterTypes.length);
+            buffer.write(parameterTypes.length);
             for(PrimitiveType parameter: parameterTypes) {
-                buffer.put((byte)parameter.ordinal());
+                buffer.write((byte)parameter.ordinal());
             }
         }
 
-        generateModule(buffer);
+        generateModule(buffer.createByteBuffer());
     }
 }
